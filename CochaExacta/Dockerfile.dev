@@ -1,0 +1,11 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0
+
+WORKDIR /app
+
+# Copy source code
+COPY . .
+
+EXPOSE 5011
+
+# Run dotnet watch for live reload in dev mode
+CMD ["dotnet", "watch", "run", "--project", "CochaExacta/CochaExacta.csproj", "--urls=http://+:5011"]

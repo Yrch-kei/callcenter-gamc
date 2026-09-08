@@ -1,0 +1,142 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-zinc-950: #09090b;
+  --color-zinc-900: #18181b;
+  --color-zinc-800: #27272a;
+  --color-zinc-700: #3f3f46;
+  --color-zinc-400: #a1a1aa;
+  --color-zinc-300: #d4d4d8;
+  --color-zinc-100: #f4f4f5;
+
+  /* Municipal purple - Cochabamba */
+  --color-primary: #7C3AED;
+  --color-primary-light: #A78BFA;
+  --color-primary-glow: #7C3AED33;
+
+  /* Accent cyan/teal - Cochabamba */
+  --color-accent: #06B6D4;
+  --color-accent-glow: #06B6D433;
+
+  /* Status colors */
+  --color-status-urgent: #ef4444;
+  --color-status-pending: #f59e0b;
+  --color-status-process: #7C3AED;
+  --color-status-done: #22c55e;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+}
+
+/* Lenis smooth scroll integration */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #09090b;
+  color: #f4f4f5;
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Gradient text utility */
+.text-gradient {
+  background: linear-gradient(135deg, #7C3AED 0%, #06B6D4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glow utilities */
+.glow-primary {
+  box-shadow: 0 0 30px #7C3AED33, 0 0 60px #7C3AED11;
+}
+
+.glow-accent {
+  box-shadow: 0 0 20px #06B6D433;
+}
+
+/* Grid background */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(124, 58, 237, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 58, 237, 0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* Noise overlay */
+.noise::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Status badge styles */
+.status-registrada { background: #7C3AED20; color: #A78BFA; border: 1px solid #7C3AED40; }
+.status-pendiente { background: #f59e0b20; color: #fbbf24; border: 1px solid #f59e0b40; }
+.status-en-proceso { background: #06B6D420; color: #22D3EE; border: 1px solid #06B6D440; }
+.status-atendida { background: #22c55e20; color: #4ade80; border: 1px solid #22c55e40; }
+.status-cancelada { background: #ef444420; color: #f87171; border: 1px solid #ef444440; }
+
+/* Timeline connector */
+.timeline-line {
+  background: linear-gradient(to bottom, #7C3AED, #06B6D4);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #09090b; }
+::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #7C3AED; }
+
+/* Pulse animation for status */
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.animate-status-pulse {
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+/* Selection color */
+::selection {
+  background: #7C3AED44;
+  color: #fff;
+}
+
+/* Reduced motion - respect user preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

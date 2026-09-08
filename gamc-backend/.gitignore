@@ -1,0 +1,29 @@
+# Ignorar dependencias instaladas
+node_modules/
+
+# Archivos de build
+dist/
+
+# Variables de entorno (¡NUNCA subir a Git!)
+.env
+.env.local
+.env.production
+!.env.example
+
+# Prisma
+prisma/migrations/
+
+# Uploads
+uploads/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

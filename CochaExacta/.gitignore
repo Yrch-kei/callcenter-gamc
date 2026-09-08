@@ -1,0 +1,16 @@
+# .NET build outputs
+bin/
+obj/
+
+# Visual Studio files
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+
+# Environment variables & secrets
+*.env
+*.env.local
+.env
+appsettings.Development.json
+!appsettings.json

@@ -1,0 +1,30 @@
+@local = http://localhost:5011
+@prod  = http://cocha.hermesoft.com
+@host  = http://cocha.hermesoft.com
+
+### Ping rápido (opcional)
+GET {{host}}/
+Accept: text/html
+
+### GeoJSON completo (para ver si carga y pinta)
+GET {{host}}/api/geojson
+Accept: application/geo+json
+
+### Reverse-geocoding por GET (lat/lng ? distrito)
+# Cochabamba aprox
+GET {{host}}/api/district?lat=-17.3895&lng=-66.1568
+Accept: application/json
+
+### Reverse-geocoding por POST (body JSON)
+POST {{host}}/api/district
+Content-Type: application/json
+Accept: application/json
+
+{
+  "lat": -17.3895,
+  "lng": -66.1568
+}
+
+### Listado de distritos (nombre/comuna)
+GET {{host}}/api/districts
+Accept: application/json

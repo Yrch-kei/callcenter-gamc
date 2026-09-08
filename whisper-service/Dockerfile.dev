@@ -1,0 +1,31 @@
+# =========================================================================
+# whisper-service — Dockerfile.dev (Desarrollo)
+# Microservicio STT: FastAPI + OpenAI Whisper + FFmpeg
+# =========================================================================
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Dependencias del sistema operativo (ffmpeg para decodificación de audio, git para pip+whisper)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ffmpeg git && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Instalar dependencias Python
+RUN pip install --no-cache-dir \
+    fastapi \
+    "uvicorn[standard]" \
+    openai-whisper \
+    python-multipart \
+    torch \
+    torchaudio
+
+# Precargar el modelo Whisper "base" en la imagen para evitar descarga en runtime
+RUN python -c "import whisper; whisper.load_model('base')"
+
+# Copiar código fuente
+COPY . .
+
+EXPOSE 5000
+
+CMD ["python", "app.py"]

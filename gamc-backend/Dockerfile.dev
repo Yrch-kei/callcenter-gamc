@@ -1,0 +1,21 @@
+# =========================================================================
+# gamc-backend — Dockerfile.dev (Desarrollo)
+# Backend satélite IA: Node.js + TypeScript + Prisma ORM
+# =========================================================================
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copiar manifiestos de dependencias y esquema Prisma
+COPY package*.json ./
+COPY prisma/ ./prisma/
+
+# Instalar dependencias y generar cliente Prisma
+RUN npm install && npx prisma generate
+
+# Copiar el resto del código fuente
+COPY . .
+
+EXPOSE 4000
+
+CMD ["npm", "run", "dev"]

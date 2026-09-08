@@ -1,0 +1,243 @@
+# =============================================================================
+# ProyectoCallCenter — Docker Compose Unificado (Desarrollo)
+# =============================================================================
+# Orquesta todos los servicios del monorepositorio en una única red Docker.
+# Uso: docker compose up --build
+# =============================================================================
+
+services:
+  # =========================================================================
+  # 1. Base de Datos: PostgreSQL 16 con PostGIS
+  # =========================================================================
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: callcenter-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dbCallCenter}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-huevos123}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./BackCallCenter/database/schema.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-dbCallCenter}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - callcenter-net
+
+  # =========================================================================
+  # 2. Ollama — Servidor LLM local
+  # =========================================================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: callcenter-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+      - ./ollama-config:/root/ollama-config
+    networks:
+      - callcenter-net
+
+  # =========================================================================
+  # 3. Whisper — Microservicio STT (FastAPI + OpenAI Whisper)
+  # =========================================================================
+  whisper:
+    build:
+      context: ./whisper-service
+      dockerfile: Dockerfile.dev
+    container_name: callcenter-whisper
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./whisper-service:/app
+    networks:
+      - callcenter-net
+
+  # =========================================================================
+  # 4. Backend Principal — BackCallCenter (Node.js + Express + TypeORM)
+  # =========================================================================
+  backend:
+    build:
+      context: ./BackCallCenter
+      dockerfile: Dockerfile.dev
+    container_name: callcenter-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: ${PORT:-3000}
+      NODE_ENV: ${NODE_ENV:-development}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-huevos123}
+      DB_NAME: ${DB_NAME:-dbCallCenter}
+      JWT_SECRET: ${JWT_SECRET:-dev_secret_key_change_in_production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_USER: ${EMAIL_USER:-tu_correo@gmail.com}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD:-tu_contraseña}
+      COCHAEXACTA_URL: ${COCHAEXACTA_URL:-http://cochaexacta:5011}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      WHISPER_URL: ${WHISPER_URL:-http://whisper:5000/transcribe}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-5}
+      UPLOAD_DIR: ${UPLOAD_DIR:-./uploads}
+      ALLOWED_FILE_TYPES: ${ALLOWED_FILE_TYPES:-image/jpeg,image/png,image/webp}
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - ./BackCallCenter:/app
+      - /app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+      whisper:
+        condition: service_started
+    networks:
+      - callcenter-net
+
+  # =========================================================================
+  # 5. CochaExacta — Microservicio GIS (.NET 8 SDK + Hot Reload)
+  # =========================================================================
+  cochaexacta:
+    build:
+      context: ./CochaExacta
+      dockerfile: Dockerfile.dev
+    container_name: callcenter-cochaexacta
+    restart: unless-stopped
+    ports:
+      - "5011:5011"
+    environment:
+      DOTNET_USE_POLLING_FILE_WATCHER: "true"
+      ASPNETCORE_ENVIRONMENT: "Development"
+    volumes:
+      - ./CochaExacta:/app
+      - /app/CochaExacta/bin
+      - /app/CochaExacta/obj
+    networks:
+      - callcenter-net
+
+  # =========================================================================
+  # 6. GAMC Backend — Backend satélite IA (Node.js + Prisma)
+  # =========================================================================
+  gamc_backend:
+    build:
+      context: ./gamc-backend
+      dockerfile: Dockerfile.dev
+    container_name: callcenter-gamc-backend
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      DATABASE_URL: "postgresql://postgres:huevos123@db:5432/gamc_db?schema=public"
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: gamc-clasificador
+      WHISPER_URL: http://whisper:5000/transcribe
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - ./gamc-backend:/app
+      - /app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+      whisper:
+        condition: service_started
+    networks:
+      - callcenter-net
+
+  # =========================================================================
+  # 7. FrontCallCenter — Panel Administrativo (React + Vite)
+  # =========================================================================
+  front_call_center:
+    build:
+      context: ./FrontCallCenter
+      dockerfile: Dockerfile.dev
+    container_name: callcenter-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3000/api}
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - ./FrontCallCenter:/app
+      - /app/node_modules
+    networks:
+      - callcenter-net
+
+  # =========================================================================
+  # 8. LandingCallCenter — Portal Ciudadano (React + Vite)
+  # =========================================================================
+  landing_call_center:
+    build:
+      context: ./LandingCallCenter
+      dockerfile: Dockerfile.dev
+    container_name: callcenter-landing
+    restart: unless-stopped
+    ports:
+      - "5174:5173"
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3000/api}
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - ./LandingCallCenter:/app
+      - /app/node_modules
+    networks:
+      - callcenter-net
+
+  # =========================================================================
+  # 9. GAMC Frontend — Frontend satélite IA (React + Vite)
+  # =========================================================================
+  gamc_frontend:
+    build:
+      context: ./gamc-frontend
+      dockerfile: Dockerfile.dev
+    container_name: callcenter-gamc-frontend
+    restart: unless-stopped
+    ports:
+      - "5175:5175"
+    environment:
+      VITE_API_URL: http://localhost:4000/api/v1
+      VITE_WHISPER_URL: http://localhost:5000/transcribe
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - ./gamc-frontend:/app
+      - /app/node_modules
+    networks:
+      - callcenter-net
+
+# =============================================================================
+# Red Compartida
+# =============================================================================
+networks:
+  callcenter-net:
+    driver: bridge
+
+# =============================================================================
+# Volúmenes Persistentes
+# =============================================================================
+volumes:
+  pgdata:
+    driver: local
+  ollama_data:
+    driver: local
