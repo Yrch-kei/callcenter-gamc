@@ -9,6 +9,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 const links = [
   { label: 'Inicio', href: '#inicio' },
+  { label: 'Denuncia IA', href: '#denuncia-ia' },
   { label: 'Consultar', href: '#consultar' },
   { label: 'Como Funciona', href: '#como-funciona' },
   { label: 'Servicios', href: '#servicios' },

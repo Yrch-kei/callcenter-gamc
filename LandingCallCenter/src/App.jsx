@@ -3,6 +3,7 @@ import { InteractiveGrid } from './components/InteractiveGrid';
 import { Navbar } from './sections/Navbar';
 import { Hero } from './sections/Hero';
 import { ImageCarousel } from './sections/ImageCarousel';
+import { CitizenComplaintAI } from './components/CitizenComplaintAI';
 import { TrackComplaint } from './sections/TrackComplaint';
 import { Features } from './sections/Features';
 import { Categories } from './sections/Categories';
@@ -18,6 +19,7 @@ function App() {
         <main>
           <Hero />
           <ImageCarousel />
+          <CitizenComplaintAI />
           <TrackComplaint />
           <Features />
           <Categories />
