@@ -19,6 +19,7 @@ import {
   Sliders,
   FileText,
   Volume2,
+  Search,
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
@@ -354,9 +355,23 @@ export function CitizenComplaintAI() {
                 </div>
               )}
 
-              {/* Botón Nueva Denuncia */}
-              <div className="pt-4 text-center">
-                <Button variant="primary" className="px-8 py-3.5 gap-2" onClick={resetAll}>
+              {/* Botones de Acción */}
+              <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Button
+                  variant="primary"
+                  className="px-8 py-3.5 gap-2"
+                  onClick={() => {
+                    const trackInput = document.querySelector('input[placeholder*="DEN-"]');
+                    if (trackInput) {
+                      trackInput.value = result.ticketCode;
+                    }
+                    document.getElementById('consultar')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                >
+                  <Search className="w-4 h-4" />
+                  Hacer seguimiento ahora
+                </Button>
+                <Button variant="outline" className="px-8 py-3.5 gap-2" onClick={resetAll}>
                   <RotateCcw className="w-4 h-4" />
                   Registrar otra denuncia
                 </Button>
