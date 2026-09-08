@@ -20,10 +20,14 @@ import {
   FileText,
   Volume2,
   Search,
+  Upload,
+  Image as ImageIcon,
+  X as XIcon,
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { transcribeAudio, classifyAndRegisterComplaint } from '../services/aiService';
+import { ComplaintMapPicker } from './ComplaintMapPicker';
 
 const PRIORITY_CONFIG = {
   CRITICA: {
@@ -63,6 +67,12 @@ export function CitizenComplaintAI() {
   const [names, setNames] = useState('');
   const [phone, setPhone] = useState('');
   const [channel, setChannel] = useState('WEB'); // 'WEB' | 'VOZ'
+
+  // Estados de Ubicación Geoespacial y Evidencia
+  const [lat, setLat] = useState(-17.3895);
+  const [lng, setLng] = useState(-66.1568);
+  const [evidenceFile, setEvidenceFile] = useState(null);
+  const [evidencePreview, setEvidencePreview] = useState(null);
 
   // Estados de carga y resultado
   const [loading, setLoading] = useState(false);
@@ -136,11 +146,37 @@ export function CitizenComplaintAI() {
     }
   };
 
+  const handleEvidenceFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        setError('El archivo seleccionado debe ser una imagen (JPG, PNG, WEBP).');
+        return;
+      }
+      setEvidenceFile(file);
+      setEvidencePreview(URL.createObjectURL(file));
+      setError(null);
+    }
+  };
+
+  const removeEvidenceFile = () => {
+    setEvidenceFile(null);
+    if (evidencePreview) {
+      URL.revokeObjectURL(evidencePreview);
+    }
+    setEvidencePreview(null);
+  };
+
   // Envío del formulario para clasificación con IA
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!description.trim() || description.length < 10) {
       setError('Por favor describe el problema con al menos 10 caracteres.');
+      return;
+    }
+
+    if (!evidenceFile) {
+      setError('Es obligatorio adjuntar una fotografía o imagen de evidencia para registrar la denuncia.');
       return;
     }
 
@@ -155,6 +191,9 @@ export function CitizenComplaintAI() {
         district,
         names,
         phone,
+        latitude: lat,
+        longitude: lng,
+        evidenceFile,
         input_channel: channel,
       });
 
@@ -192,6 +231,9 @@ export function CitizenComplaintAI() {
     setDistrict('');
     setNames('');
     setPhone('');
+    setLat(-17.3895);
+    setLng(-66.1568);
+    removeEvidenceFile();
     setError(null);
     setChannel('WEB');
     resetAudio();
@@ -512,25 +554,33 @@ export function CitizenComplaintAI() {
                 />
               </div>
 
-              {/* Ubicación y Distrito */}
+              {/* Ubicación Mapa Interactivo y Distrito */}
+              <div className="space-y-3">
+                <label className="text-sm font-semibold text-[#e4e4e7] flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 text-[#7C3AED]" /> Mapa de Ubicación de la Incidencia
+                  </span>
+                  <span className="text-xs text-[#71717a]">Haz clic en el mapa para geolocalizar</span>
+                </label>
+                <ComplaintMapPicker
+                  lat={lat}
+                  lng={lng}
+                  onLocationSelect={(nLat, nLng) => {
+                    setLat(nLat);
+                    setLng(nLng);
+                  }}
+                  address={address}
+                  onAddressChange={setAddress}
+                  district={district}
+                  onDistrictChange={setDistrict}
+                />
+              </div>
+
+              {/* Selector de Distrito Manual de respaldo */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label htmlFor="ai-address" className="text-sm font-semibold text-[#e4e4e7] flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4 text-[#7C3AED]" /> Dirección / Ubicación
-                  </label>
-                  <input
-                    id="ai-address"
-                    type="text"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Calle, Avenida, Esquina o Barrio..."
-                    className="w-full px-4 py-2.5 rounded-xl bg-[#18181b] border border-white/[0.08] text-white placeholder-[#52525b] text-sm focus:outline-none focus:border-[#7C3AED] focus:ring-1 focus:ring-[#7C3AED] transition-all"
-                  />
-                </div>
-
-                <div className="space-y-2">
                   <label htmlFor="ai-district" className="text-sm font-semibold text-[#e4e4e7] flex items-center gap-1.5">
-                    <Sliders className="w-4 h-4 text-[#7C3AED]" /> Distrito Municipal
+                    <Sliders className="w-4 h-4 text-[#7C3AED]" /> Distrito Municipal Detectado
                   </label>
                   <select
                     id="ai-district"
@@ -545,6 +595,54 @@ export function CitizenComplaintAI() {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                {/* Subida Obligatoria de Fotografía de Evidencia */}
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-[#e4e4e7] flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <ImageIcon className="w-4 h-4 text-[#7C3AED]" /> Fotografía de Evidencia <span className="text-rose-400">*</span>
+                    </span>
+                    <span className="text-xs text-rose-400 font-medium">Obligatorio</span>
+                  </label>
+
+                  {evidencePreview ? (
+                    <div className="relative rounded-xl border border-[#7C3AED50] bg-[#18181b] p-2 flex items-center gap-3">
+                      <img
+                        src={evidencePreview}
+                        alt="Evidencia seleccionada"
+                        className="w-16 h-16 rounded-lg object-cover border border-white/[0.1]"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-white truncate">
+                          {evidenceFile?.name}
+                        </p>
+                        <p className="text-[11px] text-[#71717a]">
+                          {(evidenceFile?.size / 1024 / 1024).toFixed(2)} MB · {evidenceFile?.type}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeEvidenceFile}
+                        className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/40 transition-colors"
+                        title="Eliminar fotografía"
+                      >
+                        <XIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center p-4 rounded-xl border border-dashed border-white/[0.15] bg-[#18181b] hover:border-[#7C3AED] hover:bg-[#7C3AED08] cursor-pointer transition-all">
+                      <Upload className="w-6 h-6 text-[#A78BFA] mb-1" />
+                      <span className="text-xs text-white font-medium">Subir foto de evidencia</span>
+                      <span className="text-[10px] text-[#71717a]">JPG, PNG, WEBP (Máx 5MB)</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleEvidenceFileChange}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
                 </div>
               </div>
 

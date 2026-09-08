@@ -153,21 +153,30 @@ export async function classifyAndRegisterComplaint(payload) {
   let mainBackendData = null;
   try {
     const mainEndpoint = `${MAIN_API_URL}/complaints/public`;
+    
+    // Directiva 2: Usar FormData sin definir manualmente 'Content-Type' para que fetch gestione el boundary
+    const formData = new FormData();
+    formData.append('names', payload.names || 'Ciudadano');
+    formData.append('lastname', payload.lastname || '');
+    formData.append('phone', payload.phone || '0000000');
+    formData.append('title', classification.cleanSummary || payload.text_raw.substring(0, 50));
+    formData.append('incident', payload.text_raw);
+    formData.append('address', payload.address || 'Dirección no especificada');
+    formData.append('latitude', String(payload.latitude || '-17.3895'));
+    formData.append('longitude', String(payload.longitude || '-66.1568'));
+    formData.append('risk', String(riskNum));
+    formData.append('categoryId', String(categoryId));
+    if (payload.district) {
+      formData.append('district', payload.district);
+    }
+    
+    if (payload.evidenceFile) {
+      formData.append('evidence', payload.evidenceFile);
+    }
+
     const resMain = await fetch(mainEndpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        names: payload.names || 'Ciudadano',
-        lastname: '',
-        phone: payload.phone || '0000000',
-        title: classification.cleanSummary || payload.text_raw.substring(0, 50),
-        incident: payload.text_raw,
-        address: payload.address || 'Dirección no especificada',
-        latitude: '-17.3895',
-        longitude: '-66.1568',
-        risk: riskNum,
-        categoryId: categoryId,
-      }),
+      body: formData,
     });
 
     if (resMain.ok) {
