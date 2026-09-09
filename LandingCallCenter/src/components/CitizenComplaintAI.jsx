@@ -23,6 +23,7 @@ import {
   Upload,
   Image as ImageIcon,
   X as XIcon,
+  Mail,
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
@@ -66,6 +67,8 @@ export function CitizenComplaintAI() {
   const [district, setDistrict] = useState('');
   const [names, setNames] = useState('');
   const [phone, setPhone] = useState('');
+  const [citizenEmail, setCitizenEmail] = useState('');
+  const [notifyEmail, setNotifyEmail] = useState(false);
   const [channel, setChannel] = useState('WEB'); // 'WEB' | 'VOZ'
 
   // Estados de Ubicación Geoespacial y Evidencia
@@ -191,6 +194,8 @@ export function CitizenComplaintAI() {
         district,
         names,
         phone,
+        citizenEmail,
+        notifyEmail,
         latitude: lat,
         longitude: lng,
         evidenceFile,
@@ -231,6 +236,8 @@ export function CitizenComplaintAI() {
     setDistrict('');
     setNames('');
     setPhone('');
+    setCitizenEmail('');
+    setNotifyEmail(false);
     setLat(-17.3895);
     setLng(-66.1568);
     removeEvidenceFile();
@@ -647,7 +654,7 @@ export function CitizenComplaintAI() {
               </div>
 
               {/* Datos del Ciudadano */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
                 <div className="space-y-2">
                   <label htmlFor="ai-names" className="text-sm font-semibold text-[#e4e4e7] flex items-center gap-1.5">
                     <User className="w-4 h-4 text-[#7C3AED]" /> Nombre Completo (Opcional)
@@ -675,6 +682,34 @@ export function CitizenComplaintAI() {
                     className="w-full px-4 py-2.5 rounded-xl bg-[#18181b] border border-white/[0.08] text-white placeholder-[#52525b] text-sm focus:outline-none focus:border-[#7C3AED] focus:ring-1 focus:ring-[#7C3AED] transition-all"
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="ai-email" className="text-sm font-semibold text-[#e4e4e7] flex items-center gap-1.5">
+                    <Mail className="w-4 h-4 text-[#7C3AED]" /> Correo Electrónico (Opcional)
+                  </label>
+                  <input
+                    id="ai-email"
+                    type="email"
+                    value={citizenEmail}
+                    onChange={(e) => setCitizenEmail(e.target.value)}
+                    placeholder="Ej: usuario@gmail.com"
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#18181b] border border-white/[0.08] text-white placeholder-[#52525b] text-sm focus:outline-none focus:border-[#7C3AED] focus:ring-1 focus:ring-[#7C3AED] transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Checkbox Notificaciones por Correo */}
+              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-[#18181b] border border-white/[0.08]">
+                <input
+                  id="ai-notify-email"
+                  type="checkbox"
+                  checked={notifyEmail}
+                  onChange={(e) => setNotifyEmail(e.target.checked)}
+                  className="w-4 h-4 rounded border-white/20 bg-black/40 text-[#7C3AED] focus:ring-[#7C3AED] cursor-pointer"
+                />
+                <label htmlFor="ai-notify-email" className="text-xs text-[#e4e4e7] cursor-pointer select-none">
+                  Deseo recibir notificaciones por correo electrónico cuando mi denuncia cambie de estado o sea resuelta.
+                </label>
               </div>
 
               {/* Mensaje de Error General */}

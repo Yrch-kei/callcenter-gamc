@@ -15,8 +15,13 @@ import {
   ArrowRightLeft,
   Tag,
   ImageIcon,
+  Star,
+  RotateCcw,
+  MessageSquare,
+  Send,
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { rateComplaint, requestComplaintReopen } from '../services/aiService';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -108,6 +113,18 @@ export function TrackComplaint() {
   const [buscando, setBuscando] = useState(false);
   const resultRef = useRef(null);
 
+  // Estados de Encuesta de Satisfacción
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [ratingLoading, setRatingLoading] = useState(false);
+
+  // Estados de Solicitud de Reapertura
+  const [showReopenForm, setShowReopenForm] = useState(false);
+  const [reopenReasonText, setReopenReasonText] = useState('');
+  const [reopenLoading, setReopenLoading] = useState(false);
+  const [reopenError, setReopenError] = useState('');
+
   useGSAP(
     () => {
       gsap.to('.track-glow', {
@@ -183,6 +200,11 @@ export function TrackComplaint() {
       const data = await res.json();
       setResultado(data);
       setError('');
+      setRating(data.satisfactionRating || 0);
+      setRatingSubmitted(Boolean(data.satisfactionRating));
+      setShowReopenForm(false);
+      setReopenReasonText('');
+      setReopenError('');
 
       setTimeout(() => {
         if (resultRef.current) {
@@ -199,6 +221,64 @@ export function TrackComplaint() {
     }
 
     setBuscando(false);
+  };
+
+  const handleRate = async (starIndex) => {
+    if (!resultado?.code) return;
+    const ratingValue = Number(starIndex);
+    if (isNaN(ratingValue) || ratingValue < 1 || ratingValue > 5) {
+      alert('La calificación debe ser un número entre 1 y 5.');
+      return;
+    }
+    setRatingLoading(true);
+    try {
+      await rateComplaint(resultado.code, ratingValue);
+      setRating(ratingValue);
+      setRatingSubmitted(true);
+      setResultado((prev) => (prev ? { ...prev, satisfactionRating: ratingValue } : prev));
+    } catch (err) {
+      alert(err.message || 'Error al registrar la calificación.');
+    } finally {
+      setRatingLoading(false);
+    }
+  };
+
+  const handleRequestReopen = async (e) => {
+    e.preventDefault();
+    const cleanReason = (reopenReasonText || '').trim();
+
+    if (!cleanReason || cleanReason.length < 5) {
+      setReopenError('Debes detallar la razón de disconformidad (mínimo 5 caracteres).');
+      return;
+    }
+
+    const inappropriateWords = ['mierda', 'carajo', 'puta', 'estupido', 'estúpido', 'pendejo', 'cojudo'];
+    const lowerReason = cleanReason.toLowerCase();
+    if (inappropriateWords.some((w) => lowerReason.includes(w))) {
+      setReopenError('Por favor, utiliza un lenguaje respetuoso para procesar tu solicitud formal.');
+      return;
+    }
+
+    setReopenLoading(true);
+    setReopenError('');
+    try {
+      await requestComplaintReopen(resultado.code, cleanReason);
+      setResultado((prev) =>
+        prev
+          ? {
+              ...prev,
+              reopenStatus: 'REQUESTED',
+              reopenReason: cleanReason,
+            }
+          : prev
+      );
+      setShowReopenForm(false);
+      setReopenReasonText('');
+    } catch (err) {
+      setReopenError(err.message || 'Error al registrar la solicitud de reapertura.');
+    } finally {
+      setReopenLoading(false);
+    }
   };
 
   const config = resultado ? getStatusConfig(resultado.status) : null;
@@ -366,6 +446,165 @@ export function TrackComplaint() {
                       <p className="text-xs text-[#94a3b8] pt-1">
                         Trabajo finalizado el: <strong>{formatDate(resultado.finishTime)}</strong>
                       </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Encuesta de Satisfacción (Tickets Resueltos) */}
+                {(config?.label === 'Resuelta' || resultado.status === 'Resuelta') && (
+                  <div className="sm:col-span-2 rounded-2xl border border-[#7C3AED50] bg-[#7C3AED10] p-5 space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#A78BFA]">
+                      <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                      Encuesta de Satisfacción Ciudadana
+                    </div>
+                    {resultado.satisfactionRating || ratingSubmitted ? (
+                      <p className="text-sm font-semibold text-emerald-400 flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4" />
+                        ¡Gracias por tu evaluación! Calificación otorgada: {'⭐'.repeat(resultado.satisfactionRating || rating)} (
+                        {resultado.satisfactionRating || rating}/5)
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-xs text-[#e4e4e7]">
+                          ¿Qué tan satisfecho quedaste con la atención técnica recibida por el equipo municipal?
+                        </p>
+                        <div className="flex items-center gap-2">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              disabled={ratingLoading}
+                              onClick={() => handleRate(star)}
+                              onMouseEnter={() => setHoverRating(star)}
+                              onMouseLeave={() => setHoverRating(0)}
+                              className="p-1 rounded-lg hover:bg-white/10 transition-transform hover:scale-125 focus:outline-none"
+                              title={`Calificar ${star} estrellas`}
+                            >
+                              <Star
+                                className={`w-7 h-7 ${
+                                  (hoverRating || rating) >= star
+                                    ? 'text-amber-400 fill-amber-400'
+                                    : 'text-zinc-600'
+                                }`}
+                              />
+                            </button>
+                          ))}
+                          {ratingLoading && <Loader2 className="w-4 h-4 animate-spin text-[#A78BFA] ml-2" />}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Estado de Reapertura y Formulario (Tickets Resueltos) */}
+                {(config?.label === 'Resuelta' || resultado.status === 'Resuelta') && (
+                  <div className="sm:col-span-2 space-y-3">
+                    {resultado.reopenStatus === 'REQUESTED' && (
+                      <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-5 space-y-2">
+                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-400">
+                          <RotateCcw className="w-4 h-4 text-amber-400" />
+                          Solicitud de Reapertura en Evaluación
+                        </div>
+                        <p className="text-xs text-amber-200">
+                          Has solicitado la reapertura de este ticket. El equipo de supervisión municipal está evaluando tu requerimiento.
+                        </p>
+                        <p className="text-xs text-white italic bg-black/30 p-2.5 rounded-lg border border-white/5">
+                          Motivo: "{resultado.reopenReason}"
+                        </p>
+                      </div>
+                    )}
+
+                    {resultado.reopenStatus === 'APPROVED' && (
+                      <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-5 space-y-2">
+                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-400">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                          Solicitud de Reapertura Aprobada
+                        </div>
+                        <p className="text-xs text-emerald-200">
+                          Tu solicitud fue aprobada por el operador. La denuncia ha sido reabierta para un nuevo trabajo de campo.
+                        </p>
+                      </div>
+                    )}
+
+                    {resultado.reopenStatus === 'REJECTED' && (
+                      <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 p-5 space-y-2">
+                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-rose-400">
+                          <XCircle className="w-4 h-4 text-rose-400" />
+                          Solicitud de Reapertura Desestimada
+                        </div>
+                        <p className="text-xs text-rose-200">
+                          Tras la revisión técnica del operador, la solicitud de reapertura fue desestimada.
+                        </p>
+                        {resultado.reopenResolution && (
+                          <p className="text-xs text-white italic bg-black/30 p-2.5 rounded-lg border border-white/5">
+                            Nota Técnica del Operador: "{resultado.reopenResolution}"
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {(resultado.reopenStatus === 'NONE' || !resultado.reopenStatus) && (
+                      <div className="pt-2">
+                        {!showReopenForm ? (
+                          <button
+                            type="button"
+                            onClick={() => setShowReopenForm(true)}
+                            className="text-xs text-rose-400 hover:text-rose-300 underline font-medium flex items-center gap-1.5 transition-colors"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            ¿No estás conforme con la solución? Solicitar Reapertura de Ticket
+                          </button>
+                        ) : (
+                          <form
+                            onSubmit={handleRequestReopen}
+                            className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-5 space-y-3"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-rose-300 uppercase tracking-wider flex items-center gap-1.5">
+                                <RotateCcw className="w-4 h-4" /> Solicitar Reapertura de Denuncia
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setShowReopenForm(false)}
+                                className="text-xs text-zinc-400 hover:text-white"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                            <p className="text-xs text-zinc-300">
+                              Describe en detalle por qué consideras que el problema no fue resuelto satisfactoriamente:
+                            </p>
+                            <textarea
+                              rows={3}
+                              value={reopenReasonText}
+                              onChange={(e) => {
+                                setReopenReasonText(e.target.value);
+                                if (reopenError) setReopenError('');
+                              }}
+                              placeholder="Escribe el motivo detallado de la reapertura (mínimo 5 caracteres)..."
+                              className="w-full px-3.5 py-2 rounded-xl bg-[#18181b] border border-white/10 text-white placeholder-zinc-500 text-xs focus:outline-none focus:border-rose-500"
+                              required
+                              minLength={5}
+                            />
+                            {reopenError && <p className="text-xs text-rose-400 font-medium">{reopenError}</p>}
+                            <div className="flex justify-end">
+                              <Button
+                                variant="primary"
+                                type="submit"
+                                disabled={reopenLoading || (reopenReasonText || '').trim().length < 5}
+                                className="px-5 py-2 text-xs font-bold gap-2 bg-rose-600 hover:bg-rose-700 text-white border-none"
+                              >
+                                {reopenLoading ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Send className="w-3.5 h-3.5" />
+                                )}
+                                Enviar Solicitud de Reapertura
+                              </Button>
+                            </div>
+                          </form>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}

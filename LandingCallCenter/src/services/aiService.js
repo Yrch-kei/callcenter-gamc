@@ -170,6 +170,13 @@ export async function classifyAndRegisterComplaint(payload) {
     formData.append('district', payload.district);
   }
 
+  if (payload.citizenEmail) {
+    formData.append('citizenEmail', payload.citizenEmail);
+  }
+  if (payload.notifyEmail !== undefined && payload.notifyEmail !== null) {
+    formData.append('notifyEmail', String(payload.notifyEmail));
+  }
+
   let resMain;
   try {
     resMain = await fetch(mainEndpoint, {
@@ -213,7 +220,7 @@ export async function classifyAndRegisterComplaint(payload) {
  */
 export async function trackComplaintByCode(code) {
   const trimmed = code.trim().toUpperCase();
-  const endpoint = `${MAIN_API_URL}/complaints/track/${encodeURIComponent(trimmed)}`;
+  const endpoint = `${MAIN_API_URL}/complaints/public/status/${encodeURIComponent(trimmed)}`;
 
   const res = await fetch(endpoint);
   if (res.status === 404) {
@@ -224,4 +231,52 @@ export async function trackComplaintByCode(code) {
   }
 
   return await res.json();
+}
+
+/**
+ * Envía la calificación de satisfacción de un ciudadano para una denuncia resuelta.
+ */
+export async function rateComplaint(code, rating) {
+  const trimmed = code.trim().toUpperCase();
+  const endpoint = `${MAIN_API_URL}/complaints/public/${encodeURIComponent(trimmed)}/rate`;
+  const ratingNum = Number(rating);
+
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      rating: ratingNum,
+      satisfactionRating: ratingNum,
+    }),
+  });
+
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(json.message || json.error || 'No se pudo guardar la calificación.');
+  }
+  return json;
+}
+
+/**
+ * Envía una solicitud de reapertura de denuncia por el ciudadano.
+ */
+export async function requestComplaintReopen(code, reopenReason) {
+  const trimmed = code.trim().toUpperCase();
+  const endpoint = `${MAIN_API_URL}/complaints/public/${encodeURIComponent(trimmed)}/request-reopen`;
+  const reasonText = typeof reopenReason === 'string' ? reopenReason : String(reopenReason || '');
+
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      reason: reasonText,
+      reopenReason: reasonText,
+    }),
+  });
+
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(json.message || json.error || 'No se pudo registrar la solicitud de reapertura.');
+  }
+  return json;
 }
