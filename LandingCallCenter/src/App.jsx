@@ -9,6 +9,7 @@ import { Features } from './sections/Features';
 import { Categories } from './sections/Categories';
 import { CTA } from './sections/CTA';
 import { Footer } from './sections/Footer';
+import { ChatbotFAQ } from './components/ChatbotFAQ';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <CTA />
         </main>
         <Footer />
+        <ChatbotFAQ />
       </div>
     </SmoothScroll>
   );
