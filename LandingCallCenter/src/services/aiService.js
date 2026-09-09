@@ -13,22 +13,30 @@ const CATEGORY_MAP = {
   BACHEO_Y_VIAS: 1,
   BACHEO: 1,
   VIAS: 1,
+  BACHE_EN_CALZADA: 1,
   ALUMBRADO_PUBLICO: 3,
   ALUMBRADO: 3,
   LUMINARIA: 3,
+  POSTE_SIN_LUZ: 3,
   ATENCION_CIUDADANA: 3,
   AGUA_Y_ALCANTARILLADO: 5,
   AGUA: 5,
   ALCANTARILLADO: 5,
+  FUGA_DE_AGUA: 5,
   RESIDUOS_SOLIDOS: 7,
   BASURA: 7,
+  BASURA_ACUMULADA: 7,
   AREAS_VERDES_Y_PARQUES: 9,
+  AREAS_VERDES_Y_FORESTAL: 9,
   AREAS_VERDES: 9,
   ARBOLES: 9,
+  ARBOL_PELIGROSO: 9,
   TRANSPORTE_Y_MOVILIDAD: 11,
   MERCADOS_Y_COMERCIO: 11,
   MERCADOS: 11,
   COMERCIO: 11,
+  COMERCIO_INFORMAL: 11,
+  CONTROL_ACTIVIDADES_E_INTENDENCIA: 11,
   CONSTRUCCION_Y_URBANISMO: 1,
   SEGURIDAD_CIUDADANA: 11,
   MEDIO_AMBIENTE: 7,
@@ -88,6 +96,134 @@ export async function transcribeAudio(audioBlob) {
 }
 
 /**
+ * Fallback heurístico inteligente por palabras clave cuando Ollama no está disponible.
+ */
+function getHeuristicClassification(textRaw) {
+  const text = (textRaw || '').toLowerCase();
+
+  if (
+    text.includes('arbol') ||
+    text.includes('árbol') ||
+    text.includes('rama') ||
+    text.includes('plaza') ||
+    text.includes('parque') ||
+    text.includes('forestal')
+  ) {
+    return {
+      category: 'AREAS_VERDES_Y_FORESTAL',
+      subcategory: 'Árbol o rama caída',
+      priority: 'ALTA',
+      aiConfidence: 0.90,
+      confidencePercent: '90.0%',
+      cleanSummary: textRaw.substring(0, 140),
+      keywords: ['árbol', 'parque', 'emergencia'],
+      requiresVerification: false,
+    };
+  } else if (
+    text.includes('bache') ||
+    text.includes('hueco') ||
+    text.includes('asfalto') ||
+    text.includes('calle rota') ||
+    text.includes('vias') ||
+    text.includes('vías') ||
+    text.includes('pavimento')
+  ) {
+    return {
+      category: 'BACHEO_Y_VIAS',
+      subcategory: 'Bache en calzada',
+      priority: 'ALTA',
+      aiConfidence: 0.90,
+      confidencePercent: '90.0%',
+      cleanSummary: textRaw.substring(0, 140),
+      keywords: ['bache', 'vía', 'calzada'],
+      requiresVerification: false,
+    };
+  } else if (
+    text.includes('luz') ||
+    text.includes('poste') ||
+    text.includes('cable') ||
+    text.includes('foco') ||
+    text.includes('alumbrado') ||
+    text.includes('luminaria')
+  ) {
+    return {
+      category: 'ALUMBRADO_PUBLICO',
+      subcategory: 'Poste sin luz',
+      priority: 'MEDIA',
+      aiConfidence: 0.90,
+      confidencePercent: '90.0%',
+      cleanSummary: textRaw.substring(0, 140),
+      keywords: ['alumbrado', 'foco', 'poste'],
+      requiresVerification: false,
+    };
+  } else if (
+    text.includes('agua') ||
+    text.includes('fuga') ||
+    text.includes('alcantarilla') ||
+    text.includes('tuberia') ||
+    text.includes('tubería') ||
+    text.includes('desagüe') ||
+    text.includes('drenaje')
+  ) {
+    return {
+      category: 'AGUA_Y_ALCANTARILLADO',
+      subcategory: 'Fuga de agua',
+      priority: 'ALTA',
+      aiConfidence: 0.90,
+      confidencePercent: '90.0%',
+      cleanSummary: textRaw.substring(0, 140),
+      keywords: ['agua', 'fuga', 'alcantarillado'],
+      requiresVerification: false,
+    };
+  } else if (
+    text.includes('basura') ||
+    text.includes('escombro') ||
+    text.includes('contenedor') ||
+    text.includes('desechos') ||
+    text.includes('limpieza')
+  ) {
+    return {
+      category: 'RESIDUOS_SOLIDOS',
+      subcategory: 'Basura acumulada',
+      priority: 'MEDIA',
+      aiConfidence: 0.90,
+      confidencePercent: '90.0%',
+      cleanSummary: textRaw.substring(0, 140),
+      keywords: ['basura', 'residuos', 'limpieza'],
+      requiresVerification: false,
+    };
+  } else if (
+    text.includes('comercio') ||
+    text.includes('vendedor') ||
+    text.includes('mercado') ||
+    text.includes('intendencia') ||
+    text.includes('ambulante')
+  ) {
+    return {
+      category: 'CONTROL_ACTIVIDADES_E_INTENDENCIA',
+      subcategory: 'Comercio informal',
+      priority: 'MEDIA',
+      aiConfidence: 0.90,
+      confidencePercent: '90.0%',
+      cleanSummary: textRaw.substring(0, 140),
+      keywords: ['comercio', 'vendedor', 'intendencia'],
+      requiresVerification: false,
+    };
+  }
+
+  return {
+    category: 'ATENCION_CIUDADANA',
+    subcategory: 'REGISTRO_GENERAL',
+    priority: 'MEDIA',
+    aiConfidence: 0.85,
+    confidencePercent: '85.0%',
+    cleanSummary: textRaw.substring(0, 140),
+    keywords: ['denuncia', 'ciudadano'],
+    requiresVerification: true,
+  };
+}
+
+/**
  * Registra y clasifica una denuncia con el modelo LLM y la persiste en la API Principal.
  */
 export async function classifyAndRegisterComplaint(payload) {
@@ -119,35 +255,31 @@ export async function classifyAndRegisterComplaint(payload) {
       aiData = json.data || json;
     }
   } catch (err) {
-    console.warn('[aiService] ⚠️ Servidor de clasificación IA no disponible o con timeout, ejecutando fallback:', err);
+    console.error("Fallo al clasificar con Ollama:", err);
   }
 
-  // Fallback si la IA falló o estuvo indisponible
-  const classification = aiData?.classification || {
-    category: 'ATENCION_CIUDADANA',
-    subcategory: 'REGISTRO_GENERAL',
-    priority: 'MEDIA',
-    aiConfidence: 0.85,
-    confidencePercent: '85.0%',
-    cleanSummary: payload.text_raw.substring(0, 140),
-    keywords: ['denuncia', 'ciudadano'],
-    requiresVerification: true,
-  };
+  // Fallback heurístico inteligente si la IA falló o estuvo indisponible
+  const classification = aiData?.classification || getHeuristicClassification(payload.text_raw);
 
   const riskNum = RISK_MAP[classification.priority] || 2;
-  let categoryId = CATEGORY_MAP[classification.category] || 1;
+  const categoryId = CATEGORY_MAP[classification.category] || 1;
 
-  // Regla estricta: Si el texto contiene "alumbrado", "luz", "poste" o "foco", fuerza categoryId: 3 (Alumbrado Público)
-  const textLower = (payload.text_raw || '').toLowerCase();
-  if (
-    textLower.includes('alumbrado') ||
-    textLower.includes('luz') ||
-    textLower.includes('poste') ||
-    textLower.includes('foco') ||
-    textLower.includes('luminaria')
-  ) {
-    categoryId = 3;
-  }
+  const categoryAliases = {
+    AREAS_VERDES_Y_FORESTAL: 'Árbol peligroso',
+    ARBOL_PELIGROSO: 'Árbol peligroso',
+    ALUMBRADO_PUBLICO: 'Poste sin luz',
+    POSTE_SIN_LUZ: 'Poste sin luz',
+    BACHEO_Y_VIAS: 'Bache en calzada',
+    BACHE_EN_CALZADA: 'Bache en calzada',
+    AGUA_Y_ALCANTARILLADO: 'Fuga de agua',
+    FUGA_DE_AGUA: 'Fuga de agua',
+    RESIDUOS_SOLIDOS: 'Basura acumulada',
+    BASURA_ACUMULADA: 'Basura acumulada',
+    CONTROL_ACTIVIDADES_E_INTENDENCIA: 'Comercio informal',
+    COMERCIO_INFORMAL: 'Comercio informal',
+  };
+
+  const categoryNameToSend = categoryAliases[classification.category] || classification.category;
 
   // 2. Persistencia en la API Principal (BackCallCenter en :3000)
   const mainEndpoint = `${MAIN_API_URL}/complaints/public`;
@@ -166,6 +298,8 @@ export async function classifyAndRegisterComplaint(payload) {
   formData.append('longitude', String(payload.longitude || '-66.1568'));
   formData.append('risk', String(riskNum));
   formData.append('categoryId', String(categoryId));
+  formData.append('category', categoryNameToSend);
+  formData.append('categoryName', categoryNameToSend);
   if (payload.district) {
     formData.append('district', payload.district);
   }
