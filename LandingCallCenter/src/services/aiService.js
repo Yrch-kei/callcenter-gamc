@@ -150,56 +150,61 @@ export async function classifyAndRegisterComplaint(payload) {
   }
 
   // 2. Persistencia en la API Principal (BackCallCenter en :3000)
-  let mainBackendData = null;
-  try {
-    const mainEndpoint = `${MAIN_API_URL}/complaints/public`;
-    
-    // Directiva 2: Usar FormData sin definir manualmente 'Content-Type' para que fetch gestione el boundary
-    const formData = new FormData();
-    formData.append('names', payload.names || 'Ciudadano');
-    formData.append('lastname', payload.lastname || '');
-    formData.append('phone', payload.phone || '0000000');
-    formData.append('title', classification.cleanSummary || payload.text_raw.substring(0, 50));
-    formData.append('incident', payload.text_raw);
-    formData.append('address', payload.address || 'Dirección no especificada');
-    formData.append('latitude', String(payload.latitude || '-17.3895'));
-    formData.append('longitude', String(payload.longitude || '-66.1568'));
-    formData.append('risk', String(riskNum));
-    formData.append('categoryId', String(categoryId));
-    if (payload.district) {
-      formData.append('district', payload.district);
-    }
-    
-    if (payload.evidenceFile) {
-      formData.append('evidence', payload.evidenceFile);
-    }
+  const mainEndpoint = `${MAIN_API_URL}/complaints/public`;
+  
+  const formData = new FormData();
+  if (payload.evidenceFile) {
+    formData.append('evidence', payload.evidenceFile);
+  }
+  formData.append('names', payload.names || 'Ciudadano');
+  formData.append('lastname', payload.lastname || '');
+  formData.append('phone', payload.phone || '0000000');
+  formData.append('title', (payload.title || classification.cleanSummary || payload.text_raw).substring(0, 50));
+  formData.append('incident', payload.text_raw);
+  formData.append('address', payload.address || 'Dirección no especificada');
+  formData.append('latitude', String(payload.latitude || '-17.3895'));
+  formData.append('longitude', String(payload.longitude || '-66.1568'));
+  formData.append('risk', String(riskNum));
+  formData.append('categoryId', String(categoryId));
+  if (payload.district) {
+    formData.append('district', payload.district);
+  }
 
-    const resMain = await fetch(mainEndpoint, {
+  let resMain;
+  try {
+    resMain = await fetch(mainEndpoint, {
       method: 'POST',
       body: formData,
     });
-
-    if (resMain.ok) {
-      const jsonMain = await resMain.json();
-      mainBackendData = jsonMain.data || jsonMain;
-    }
   } catch (err) {
-    console.warn('[aiService] ⚠️ Error al conectar con BackCallCenter:', err);
+    console.error('[aiService] ❌ Error de conexión con el backend principal:', err);
+    throw new Error('No se pudo establecer conexión con el servidor municipal para guardar la denuncia.');
   }
 
-  const officialCode = mainBackendData?.code || aiData?.ticketCode || `GAMC-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
+  const jsonMain = await resMain.json().catch(() => ({}));
+  if (!resMain.ok) {
+    const errorMsg = jsonMain.error || jsonMain.message || `Error del servidor (${resMain.status})`;
+    throw new Error(errorMsg);
+  }
+
+  const savedComplaint = jsonMain.data || jsonMain;
+  const officialCode = jsonMain.code || savedComplaint.code;
+
+  if (!officialCode) {
+    throw new Error('La denuncia fue procesada pero el servidor no retornó un código de seguimiento válido.');
+  }
 
   return {
     ticketCode: officialCode,
-    complaintId: mainBackendData?.id || aiData?.complaintId || '1',
+    complaintId: savedComplaint.id,
     classification,
     denunciante: {
       names: payload.names || 'Ciudadano Web',
       phone: payload.phone || null,
     },
-    status: mainBackendData?.status || 'Pendiente',
+    status: savedComplaint.status || 'Pendiente',
     input_channel: payload.input_channel || 'WEB',
-    createdAt: new Date().toISOString(),
+    createdAt: savedComplaint.createdAt || new Date().toISOString(),
   };
 }
 
