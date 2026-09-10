@@ -97,131 +97,113 @@ export async function transcribeAudio(audioBlob) {
 
 /**
  * Fallback heurístico inteligente por palabras clave cuando Ollama no está disponible.
+ * Devuelve las categorías reales de la base de datos municipal.
  */
-function getHeuristicClassification(textRaw) {
-  const text = (textRaw || '').toLowerCase();
+export const localHeuristicClassifier = (text = '') => {
+  const lower = (text || '').toLowerCase();
 
-  if (
-    text.includes('arbol') ||
-    text.includes('árbol') ||
-    text.includes('rama') ||
-    text.includes('plaza') ||
-    text.includes('parque') ||
-    text.includes('forestal')
-  ) {
+  if (lower.match(/alcohol|bebida|borracho|cerveza|tomando|feria|comercio|vendedor|acera/)) {
     return {
-      category: 'AREAS_VERDES_Y_FORESTAL',
-      subcategory: 'Árbol o rama caída',
-      priority: 'ALTA',
-      aiConfidence: 0.90,
-      confidencePercent: '90.0%',
-      cleanSummary: textRaw.substring(0, 140),
-      keywords: ['árbol', 'parque', 'emergencia'],
-      requiresVerification: false,
+      categoria: 'Comercio informal',
+      subcategoria: 'Consumo de alcohol en vía pública',
+      prioridad: 'MEDIA',
+      confianza: 0.92,
+      resumen_limpio: text.slice(0, 140)
     };
-  } else if (
-    text.includes('bache') ||
-    text.includes('hueco') ||
-    text.includes('asfalto') ||
-    text.includes('calle rota') ||
-    text.includes('vias') ||
-    text.includes('vías') ||
-    text.includes('pavimento')
-  ) {
+  }
+  if (lower.match(/arbol|árbol|rama|caido|caído|parque|jardin|jardín|verde/)) {
     return {
-      category: 'BACHEO_Y_VIAS',
-      subcategory: 'Bache en calzada',
-      priority: 'ALTA',
-      aiConfidence: 0.90,
-      confidencePercent: '90.0%',
-      cleanSummary: textRaw.substring(0, 140),
-      keywords: ['bache', 'vía', 'calzada'],
-      requiresVerification: false,
+      categoria: 'Árbol peligroso',
+      subcategoria: 'Árbol o rama caída',
+      prioridad: 'ALTA',
+      confianza: 0.95,
+      resumen_limpio: text.slice(0, 140)
     };
-  } else if (
-    text.includes('luz') ||
-    text.includes('poste') ||
-    text.includes('cable') ||
-    text.includes('foco') ||
-    text.includes('alumbrado') ||
-    text.includes('luminaria')
-  ) {
+  }
+  if (lower.match(/poste|luz|cable|luminaria|foco|electrico|eléctrico|chispa/)) {
     return {
-      category: 'ALUMBRADO_PUBLICO',
-      subcategory: 'Poste sin luz',
-      priority: 'MEDIA',
-      aiConfidence: 0.90,
-      confidencePercent: '90.0%',
-      cleanSummary: textRaw.substring(0, 140),
-      keywords: ['alumbrado', 'foco', 'poste'],
-      requiresVerification: false,
+      categoria: 'Poste sin luz',
+      subcategoria: 'Falla de alumbrado público',
+      prioridad: 'ALTA',
+      confianza: 0.95,
+      resumen_limpio: text.slice(0, 140)
     };
-  } else if (
-    text.includes('agua') ||
-    text.includes('fuga') ||
-    text.includes('alcantarilla') ||
-    text.includes('tuberia') ||
-    text.includes('tubería') ||
-    text.includes('desagüe') ||
-    text.includes('drenaje')
-  ) {
+  }
+  if (lower.match(/bache|hueco|calle|asfalto|pavimento|avenida|calzada/)) {
     return {
-      category: 'AGUA_Y_ALCANTARILLADO',
-      subcategory: 'Fuga de agua',
-      priority: 'ALTA',
-      aiConfidence: 0.90,
-      confidencePercent: '90.0%',
-      cleanSummary: textRaw.substring(0, 140),
-      keywords: ['agua', 'fuga', 'alcantarillado'],
-      requiresVerification: false,
+      categoria: 'Bache en calzada',
+      subcategoria: 'Deterioro vial',
+      prioridad: 'MEDIA',
+      confianza: 0.92,
+      resumen_limpio: text.slice(0, 140)
     };
-  } else if (
-    text.includes('basura') ||
-    text.includes('escombro') ||
-    text.includes('contenedor') ||
-    text.includes('desechos') ||
-    text.includes('limpieza')
-  ) {
+  }
+  if (lower.match(/agua|tubo|tuberia|tubería|fuga|alcantarilla|desague|desagüe/)) {
     return {
-      category: 'RESIDUOS_SOLIDOS',
-      subcategory: 'Basura acumulada',
-      priority: 'MEDIA',
-      aiConfidence: 0.90,
-      confidencePercent: '90.0%',
-      cleanSummary: textRaw.substring(0, 140),
-      keywords: ['basura', 'residuos', 'limpieza'],
-      requiresVerification: false,
+      categoria: 'Fuga de agua',
+      subcategoria: 'Fuga o colapso hidráulico',
+      prioridad: 'ALTA',
+      confianza: 0.95,
+      resumen_limpio: text.slice(0, 140)
     };
-  } else if (
-    text.includes('comercio') ||
-    text.includes('vendedor') ||
-    text.includes('mercado') ||
-    text.includes('intendencia') ||
-    text.includes('ambulante')
-  ) {
+  }
+  if (lower.match(/basura|desperdicio|escombro|contenedor|limpieza/)) {
     return {
-      category: 'CONTROL_ACTIVIDADES_E_INTENDENCIA',
-      subcategory: 'Comercio informal',
-      priority: 'MEDIA',
-      aiConfidence: 0.90,
-      confidencePercent: '90.0%',
-      cleanSummary: textRaw.substring(0, 140),
-      keywords: ['comercio', 'vendedor', 'intendencia'],
-      requiresVerification: false,
+      categoria: 'Basura acumulada',
+      subcategoria: 'Acumulación de residuos',
+      prioridad: 'MEDIA',
+      confianza: 0.92,
+      resumen_limpio: text.slice(0, 140)
     };
   }
 
   return {
-    category: 'ATENCION_CIUDADANA',
-    subcategory: 'REGISTRO_GENERAL',
-    priority: 'MEDIA',
-    aiConfidence: 0.85,
-    confidencePercent: '85.0%',
-    cleanSummary: textRaw.substring(0, 140),
-    keywords: ['denuncia', 'ciudadano'],
-    requiresVerification: true,
+    categoria: 'Comercio informal',
+    subcategoria: 'Inspección general',
+    prioridad: 'BAJA',
+    confianza: 0.70,
+    resumen_limpio: text.slice(0, 140)
   };
-}
+};
+
+export const getHeuristicClassification = localHeuristicClassifier;
+
+/**
+ * Realiza la clasificación con Ollama llamando al endpoint /api/generate.
+ * Configura un timeout de 120 segundos para inferencia en CPU y limpia el temporizador en el bloque finally.
+ */
+export const classifyWithOllama = async (complaintText) => {
+  const OLLAMA_URL = import.meta.env.VITE_OLLAMA_URL || 'http://localhost:11434/api/generate';
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 segundos para CPU
+
+  try {
+    const response = await fetch(OLLAMA_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: 'gamc-clasificador',
+        prompt: `Analiza y clasifica la siguiente denuncia ciudadana: "${complaintText}"`,
+        stream: false,
+        format: 'json',
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const parsedResult = typeof data.response === 'string' ? JSON.parse(data.response) : data.response;
+    return parsedResult;
+  } catch (error) {
+    console.warn("Ollama falló o superó el tiempo límite. Aplicando clasificador heurístico local:", error);
+    return localHeuristicClassifier(complaintText);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
 
 /**
  * Registra y clasifica una denuncia con el modelo LLM y la persiste en la API Principal.
@@ -229,11 +211,11 @@ function getHeuristicClassification(textRaw) {
 export async function classifyAndRegisterComplaint(payload) {
   let aiData = null;
 
-  // 1. Intento de clasificación con IA (gamc-backend en :4000)
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 seg timeout
+  // 1. Intento de clasificación con IA (gamc-backend en :4000 / Ollama)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 segundos timeout
 
+  try {
     const res = await fetch(`${GAMC_API_URL}/complaints`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -248,38 +230,68 @@ export async function classifyAndRegisterComplaint(payload) {
         input_channel: payload.input_channel || 'WEB',
       }),
     });
-    clearTimeout(timeoutId);
 
     if (res.ok) {
       const json = await res.json();
       aiData = json.data || json;
     }
-  } catch (err) {
-    console.error("Fallo al clasificar con Ollama:", err);
+  } catch (error) {
+    console.warn("Fallo o timeout al clasificar, aplicando clasificador heurístico o directo:", error);
+  } finally {
+    clearTimeout(timeoutId);
   }
 
-  // Fallback heurístico inteligente si la IA falló o estuvo indisponible
-  const classification = aiData?.classification || getHeuristicClassification(payload.text_raw);
+  // Fallback heurístico semántico local si la IA falló o estuvo indisponible
+  const rawClassification = aiData?.classification || localHeuristicClassifier(payload.text_raw);
 
-  const riskNum = RISK_MAP[classification.priority] || 2;
-  const categoryId = CATEGORY_MAP[classification.category] || 1;
+  const catName = rawClassification.categoria || rawClassification.category || 'Comercio informal';
+  const subcatName = rawClassification.subcategoria || rawClassification.subcategory || 'Inspección general';
+  const prio = rawClassification.prioridad || rawClassification.priority || 'MEDIA';
+  const conf = rawClassification.confianza ?? rawClassification.aiConfidence ?? 0.70;
+  const confPercent = rawClassification.confidencePercent || `${(conf * 100).toFixed(1)}%`;
+  const cleanSum = rawClassification.resumen_limpio || rawClassification.cleanSummary || payload.text_raw.slice(0, 140);
 
   const categoryAliases = {
     AREAS_VERDES_Y_FORESTAL: 'Árbol peligroso',
     ARBOL_PELIGROSO: 'Árbol peligroso',
+    'Árbol peligroso': 'Árbol peligroso',
     ALUMBRADO_PUBLICO: 'Poste sin luz',
     POSTE_SIN_LUZ: 'Poste sin luz',
+    'Poste sin luz': 'Poste sin luz',
     BACHEO_Y_VIAS: 'Bache en calzada',
     BACHE_EN_CALZADA: 'Bache en calzada',
+    'Bache en calzada': 'Bache en calzada',
     AGUA_Y_ALCANTARILLADO: 'Fuga de agua',
     FUGA_DE_AGUA: 'Fuga de agua',
+    'Fuga de agua': 'Fuga de agua',
     RESIDUOS_SOLIDOS: 'Basura acumulada',
     BASURA_ACUMULADA: 'Basura acumulada',
+    'Basura acumulada': 'Basura acumulada',
     CONTROL_ACTIVIDADES_E_INTENDENCIA: 'Comercio informal',
     COMERCIO_INFORMAL: 'Comercio informal',
+    'Comercio informal': 'Comercio informal',
   };
 
-  const categoryNameToSend = categoryAliases[classification.category] || classification.category;
+  const finalCategoryName = categoryAliases[catName] || catName;
+
+  const classification = {
+    categoria: finalCategoryName,
+    category: finalCategoryName,
+    subcategoria: subcatName,
+    subcategory: subcatName,
+    prioridad: prio,
+    priority: prio,
+    confianza: conf,
+    aiConfidence: conf,
+    confidencePercent: confPercent,
+    resumen_limpio: cleanSum,
+    cleanSummary: cleanSum,
+    keywords: rawClassification.keywords || [finalCategoryName.toLowerCase()],
+    requiresVerification: rawClassification.requiresVerification ?? (prio === 'BAJA'),
+  };
+
+  const riskNum = RISK_MAP[classification.priority] || 2;
+  const categoryId = CATEGORY_MAP[classification.category] || CATEGORY_MAP[catName] || 1;
 
   // 2. Persistencia en la API Principal (BackCallCenter en :3000)
   const mainEndpoint = `${MAIN_API_URL}/complaints/public`;
@@ -298,8 +310,8 @@ export async function classifyAndRegisterComplaint(payload) {
   formData.append('longitude', String(payload.longitude || '-66.1568'));
   formData.append('risk', String(riskNum));
   formData.append('categoryId', String(categoryId));
-  formData.append('category', categoryNameToSend);
-  formData.append('categoryName', categoryNameToSend);
+  formData.append('category', finalCategoryName);
+  formData.append('categoryName', finalCategoryName);
   if (payload.district) {
     formData.append('district', payload.district);
   }

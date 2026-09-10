@@ -131,7 +131,7 @@ export function Features() {
     <section id="como-funciona" ref={container} className="relative bg-[#09090b] overflow-hidden">
       {/* Separator line */}
       <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-24 z-10"
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-24 z-10 pointer-events-none"
         style={{ background: 'linear-gradient(to bottom, transparent, #7C3AED44, transparent)' }}
       />
 
@@ -226,7 +226,7 @@ export function Features() {
 
               {/* Bottom accent line */}
               <div
-                className="absolute bottom-0 left-0 right-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                className="absolute bottom-0 left-0 right-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
                 style={{ background: `linear-gradient(90deg, transparent, ${step.accent}, transparent)` }}
               />
             </div>

@@ -1,9 +1,9 @@
 FROM llama3.2
 
-PARAMETER temperature 0.1
-PARAMETER top_p 0.9
-PARAMETER num_ctx 2048
-PARAMETER num_predict 350
+PARAMETER temperature 0.0
+PARAMETER top_p 0.8
+PARAMETER num_ctx 1024
+PARAMETER num_predict 100
 
 SYSTEM """
 Eres el sistema oficial de Inteligencia Artificial para la clasificación, derivación y triaje de denuncias ciudadanas del Gobierno Autónomo Municipal de Cochabamba (GAMC).

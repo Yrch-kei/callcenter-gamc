@@ -297,7 +297,7 @@ export function TrackComplaint() {
 
       {/* Separador */}
       <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-24"
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-24 pointer-events-none"
         style={{ background: 'linear-gradient(to bottom, transparent, #7C3AED44, transparent)' }}
       />
 
@@ -328,7 +328,7 @@ export function TrackComplaint() {
               style={{ background: 'radial-gradient(circle at 50% 0%, rgba(37,99,235,0.08), transparent 60%)' }}
             />
             <div
-              className="absolute top-0 left-1/4 right-1/4 h-px"
+              className="absolute top-0 left-1/4 right-1/4 h-px pointer-events-none"
               style={{ background: 'linear-gradient(90deg, transparent, #7C3AED, transparent)' }}
             />
 

@@ -254,12 +254,21 @@ export function ChatbotFAQ() {
         </button>
       </div>
 
+      {/* ── OVERLAY / BACKDROP DE FONDO DE CHAT MODAL ── */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm transition-opacity"
+          onClick={() => setIsOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* ── VENTANA DE CHAT COMPACTA ── */}
       {isOpen && (
-        <div className="fixed bottom-24 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[390px] h-[530px] max-h-[calc(100vh-7rem)] bg-zinc-900/95 backdrop-blur-2xl border border-zinc-800/80 rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-bottom-5">
+        <div className="fixed bottom-24 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[390px] h-[550px] max-h-[calc(100vh-7rem)] bg-zinc-900/95 backdrop-blur-2xl border border-zinc-800/80 rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-bottom-5">
           
           {/* Cabecera Oficial */}
-          <div className="px-4 py-3.5 bg-gradient-to-r from-zinc-900 via-zinc-900 to-zinc-950 border-b border-zinc-800/80 flex items-center justify-between">
+          <div className="px-4 py-3.5 bg-gradient-to-r from-zinc-900 via-zinc-900 to-zinc-950 border-b border-zinc-800/80 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500/20 to-cyan-500/20 border border-sky-500/30 flex items-center justify-center text-sky-400">
                 <Bot className="w-5 h-5" />
@@ -297,8 +306,13 @@ export function ChatbotFAQ() {
             </div>
           </div>
 
-          {/* Área de Mensajes */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
+          {/* Área de Mensajes (Scrollable con Aislamiento de Scroll) */}
+          <div
+            className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 overscroll-contain scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent"
+            style={{ overscrollBehavior: 'contain' }}
+            data-lenis-prevent="true"
+            onWheel={(e) => e.stopPropagation()}
+          >
             {messages.map((msg) => (
               <div
                 key={msg.id}
@@ -379,7 +393,7 @@ export function ChatbotFAQ() {
           {/* Formulario e Input Inferior */}
           <form
             onSubmit={handleSendMessage}
-            className="p-3 bg-zinc-950/80 border-t border-zinc-800/80 flex items-center gap-2"
+            className="p-3 bg-zinc-950/80 border-t border-zinc-800/80 flex items-center gap-2 shrink-0"
           >
             <input
               type="text"

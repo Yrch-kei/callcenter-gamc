@@ -100,7 +100,7 @@ export function Categories() {
       />
 
       <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-24"
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-24 pointer-events-none"
         style={{ background: 'linear-gradient(to bottom, transparent, #06B6D444, transparent)' }}
       />
 
@@ -159,7 +159,7 @@ export function Categories() {
 
                 {/* Bottom accent line */}
                 <div
-                  className="absolute bottom-0 left-0 right-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                  className="absolute bottom-0 left-0 right-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
                   style={{ background: `linear-gradient(90deg, transparent, ${cat.accent}, transparent)` }}
                 />
               </div>
