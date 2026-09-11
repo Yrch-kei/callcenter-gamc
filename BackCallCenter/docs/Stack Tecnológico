@@ -1,0 +1,21 @@
+Runtime: Node.js
+
+Lenguaje: TypeScript
+
+Framework: Express.js
+
+Base de Datos: MySQL con TypeORM
+
+Autenticación: JWT + bcryptjs
+
+Seguridad: Helmet, express-rate-limit
+
+Logging: Winston + Morgan
+
+Uploads: Multer (almacenamiento local en uploads/)
+
+Validación: Implementación personalizada
+
+Quality Assurance: ESLint + Prettier
+
+Testing: Jest (configuración básica incluida)

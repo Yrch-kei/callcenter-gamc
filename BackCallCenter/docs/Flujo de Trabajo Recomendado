@@ -1,0 +1,9 @@
+Variables de entorno: Copiar .env.example a .env y configurar valores reales
+
+Instalación: npm install
+
+Desarrollo: npm run dev (usa ts-node-dev para hot-reload)
+
+Build: npm run build (genera código JavaScript en dist/)
+
+Producción: npm start (ejecuta el código compilado)

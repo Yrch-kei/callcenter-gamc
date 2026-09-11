@@ -76,7 +76,7 @@ services:
     environment:
       PORT: ${PORT:-3000}
       NODE_ENV: ${NODE_ENV:-development}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      FRONTEND_URL: ${FRONTEND_URL:-http://192.168.100.6:5173}
       DB_HOST: ${DB_HOST:-db}
       DB_PORT: ${DB_PORT:-5432}
       DB_USER: ${DB_USER:-postgres}
@@ -174,7 +174,8 @@ services:
     ports:
       - "5173:5173"
     environment:
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:3000/api}
+      VITE_API_URL: ${VITE_API_URL:-/api}
+      VITE_BACKEND_DOCKER_URL: ${VITE_BACKEND_DOCKER_URL:-http://backend:3000}
       CHOKIDAR_USEPOLLING: "true"
       WATCHPACK_POLLING: "true"
     volumes:
@@ -195,7 +196,8 @@ services:
     ports:
       - "5174:5173"
     environment:
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:3000/api}
+      VITE_API_URL: ${VITE_API_URL:-/api}
+      VITE_BACKEND_DOCKER_URL: ${VITE_BACKEND_DOCKER_URL:-http://backend:3000}
       CHOKIDAR_USEPOLLING: "true"
       WATCHPACK_POLLING: "true"
     volumes:
@@ -203,6 +205,7 @@ services:
       - /app/node_modules
     networks:
       - callcenter-net
+
 
   # =========================================================================
   # 9. GAMC Frontend — Frontend satélite IA (React + Vite)

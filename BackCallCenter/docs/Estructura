@@ -1,0 +1,31 @@
+BackendCallcenter/
+├── .husky/                 # Hooks de Git para pre-commit checks
+├── dist/                   # Código compilado (generado automáticamente)
+├── docs/                   # Documentación del proyecto
+├── node_modules/           # Dependencias de Node.js
+├── src/                    # Código fuente principal
+│   ├── config/             # Configuraciones de la aplicación
+│   │   ├── db.ts           # Configuración de conexión a MySQL con TypeORM
+│   │   ├── server.ts       # Configuración específica del servidor
+│   │   └── storage.ts      # Manejo de uploads con Multer
+│   ├── controllers/        # Controladores de rutas
+│   ├── middlewares/        # Middlewares personalizados
+│   │   └── error.middleware.ts # Manejo centralizado de errores
+│   ├── models/             # Entidades de TypeORM
+│   ├── routes/             # Definición de rutas
+│   ├── services/           # Lógica de negocio
+│   ├── types/              # Tipos TypeScript personalizados
+│   ├── utils/              # Utilidades
+│   │   └── logger.ts       # Configuración de Winston para logging
+│   ├── validations/        # Esquemas de validación
+│   └── app.ts              # Punto de entrada principal
+├── tests/                  # Pruebas automatizadas
+├── uploads/                # Archivos subidos (almacenamiento local)
+├── .env                    # Variables de entorno (ignorado por Git)
+├── .env.example            # Plantilla de variables de entorno
+├── .gitignore              # Archivos excluidos del control de versiones
+├── eslint.config.js        # Configuración de ESLint
+├── package-lock.json       # Versiones exactas de dependencias
+├── package.json            # Configuración del proyecto y dependencias
+├── README.md               # Documentación básica del proyecto
+└── tsconfig.json           # Configuración de TypeScript

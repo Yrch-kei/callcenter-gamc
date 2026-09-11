@@ -1,0 +1,24 @@
+1. Base de Datos (src/config/db.ts)
+Conexión a MySQL mediante TypeORM
+
+Configuración de sincronización automática en desarrollo
+
+Manejo de migraciones
+
+2. Servidor (src/app.ts)
+Middlewares esenciales: Helmet, CORS, rate-limiting
+
+Configuración de logging combinado
+
+Manejo centralizado de errores
+
+Inicialización ordenada del servidor
+
+3. Manejo de Archivos (src/config/storage.ts)
+Configuración de Multer para uploads
+
+Validación de tipos MIME
+
+Generación de nombres únicos para archivos
+
+Límite de tamaño configurable

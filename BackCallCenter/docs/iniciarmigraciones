@@ -1,0 +1,15 @@
+ --iniciar migracines
+ 
+ npx typeorm-ts-node-commonjs migration:run -d src/config/db.ts
+
+ --Generar migracines dependiendo del modelo 
+
+  npx typeorm-ts-node-commonjs migration:generate src/migrations/InitialSchema -d src/config/db.ts
+ 
+ --Revertir migracines
+
+ npx typeorm-ts-node-commonjs migration:revert -d src/config/db.ts
+
+ --Creacion manual
+
+ npx typeorm-ts-node-commonjs migration:create -d src/config/db.ts -d src/config/db.ts
