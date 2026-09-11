@@ -36,6 +36,16 @@ export const initializeDB = async () => {
       await AppDataSource.query(`ALTER TABLE "Complaint" ADD COLUMN IF NOT EXISTS "reopenResolution" TEXT NULL;`);
       await AppDataSource.query(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "resetPasswordToken" VARCHAR(255) NULL;`);
       await AppDataSource.query(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "resetPasswordExpires" TIMESTAMP NULL;`);
+      await AppDataSource.query(`
+        CREATE TABLE IF NOT EXISTS "PushSubscription" (
+          "id" SERIAL PRIMARY KEY,
+          "userId" INTEGER NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,
+          "endpoint" TEXT NOT NULL,
+          "p256dh" TEXT NOT NULL,
+          "auth" TEXT NOT NULL,
+          "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
     } catch (e: any) {
       console.warn('[DB] Nota al asegurar las columnas:', e.message);
     }

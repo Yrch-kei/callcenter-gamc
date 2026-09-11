@@ -8,6 +8,8 @@ import { Category }  from '../models/category.entity';
 import { Mandated }  from '../models/mandated.entity';
 import { Location }  from '../models/location.entity';
 import { ComplaintImage } from '../models/complaintImage.entity';
+import { PushSubscription } from '../models/pushSubscription.entity';
+import { webpush } from '../utils/push';
 
 import {
   isValidLatitude,
@@ -873,6 +875,44 @@ export class ComplaintService {
     if (operator) complaint.editBy = operator;
 
     const savedComplaint = await this.repo.save(complaint);
+
+    // Enviar notificación Web Push al técnico si tiene suscripciones registradas
+    try {
+      const pushRepo = AppDataSource.getRepository(PushSubscription);
+      const subscriptions = await pushRepo.find({ where: { userId: technicianId } });
+      if (subscriptions && subscriptions.length > 0) {
+        const payload = JSON.stringify({
+          title: 'Nueva Denuncia Asignada',
+          body: `Caso ${savedComplaint.code || `#${savedComplaint.id}`}: ${savedComplaint.title || savedComplaint.incident}`,
+          icon: '/icon-192.png',
+          url: '/tecnico'
+        });
+
+        await Promise.all(
+          subscriptions.map(async (sub) => {
+            try {
+              await webpush.sendNotification(
+                {
+                  endpoint: sub.endpoint,
+                  keys: {
+                    p256dh: sub.p256dh,
+                    auth: sub.auth
+                  }
+                },
+                payload
+              );
+            } catch (err: any) {
+              console.warn('[WebPush] Error enviando notificación:', err.message);
+              if (err.statusCode === 404 || err.statusCode === 410) {
+                await pushRepo.delete(sub.id);
+              }
+            }
+          })
+        );
+      }
+    } catch (pushErr: any) {
+      console.warn('[ComplaintService] Error procesando Web Push:', pushErr.message);
+    }
 
     try {
       const historyService = new ComplaintHistoryService();

@@ -13,7 +13,9 @@ import {
   ShieldAlert as ShieldAlertIcon,
   ChevronRight as ChevronRightIcon,
   Check as CheckIcon,
-  Package as PackageIcon
+  Package as PackageIcon,
+  Bell as BellIcon,
+  BellOff as BellOffIcon
 } from 'lucide-react';
 import complaintService from '../services/complaintService';
 import { useAuth } from '../context/AuthContext';
@@ -32,6 +34,8 @@ const ShieldAlert = ShieldAlertIcon as any;
 const ChevronRight = ChevronRightIcon as any;
 const Check = CheckIcon as any;
 const Package = PackageIcon as any;
+const Bell = BellIcon as any;
+const BellOff = BellOffIcon as any;
 
 interface ComplaintItem {
   _id: number;
@@ -57,6 +61,17 @@ interface ComplaintItem {
   materialsUsed?: string | null;
   resolutionResult?: string | null;
 }
+
+const urlBase64ToUint8Array = (base64String: string) => {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+};
 
 const getCoordinates = (c: ComplaintItem) => {
   if (c.latitude && c.longitude) return { lat: Number(c.latitude), lng: Number(c.longitude) };
@@ -88,8 +103,77 @@ export default function TechnicianFieldView() {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
 
+  // Estado de notificaciones Push
+  const [pushSubscribed, setPushSubscribed] = useState<boolean>(false);
+  const [pushLoading, setPushLoading] = useState<boolean>(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const prevCountRef = useRef<number>(0);
+
+  // Verificar suscripción push actual al cargar
+  useEffect(() => {
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      navigator.serviceWorker.ready.then((reg) => {
+        reg.pushManager.getSubscription().then((sub) => {
+          if (sub) {
+            setPushSubscribed(true);
+          }
+        });
+      });
+    }
+  }, []);
+
+  const handleSubscribePush = async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      alert('Las notificaciones Web Push no están soportadas en este dispositivo/navegador.');
+      return;
+    }
+
+    setPushLoading(true);
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        alert('Se requiere otorgar permisos de notificación para recibir las alertas sonoras.');
+        setPushLoading(false);
+        return;
+      }
+
+      const { publicKey } = await complaintService.getPushPublicKey();
+      if (!publicKey) {
+        alert('No se pudo obtener la clave pública VAPID del servidor.');
+        setPushLoading(false);
+        return;
+      }
+
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        const applicationServerKey = urlBase64ToUint8Array(publicKey);
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey,
+        });
+      }
+
+      const subJson = sub.toJSON();
+      await complaintService.subscribePush({
+        endpoint: sub.endpoint,
+        keys: {
+          p256dh: subJson.keys?.p256dh,
+          auth: subJson.keys?.auth,
+        },
+      });
+
+      setPushSubscribed(true);
+      setSubmitSuccess('¡Notificaciones Push de alerta activadas correctamente!');
+      setTimeout(() => setSubmitSuccess(null), 4000);
+    } catch (err: any) {
+      console.error('Error al suscribir notificaciones push:', err);
+      alert('Error al activar notificaciones Push: ' + (err?.message || err));
+    } finally {
+      setPushLoading(false);
+    }
+  };
 
   // Mantener previsualizaciones de imágenes vivas sin memory leaks
   useEffect(() => {
@@ -297,6 +381,37 @@ export default function TechnicianFieldView() {
 
       {/* Contenido principal */}
       <main className="mx-auto max-w-lg px-4 pt-4">
+        {/* Banner de Notificaciones Web Push */}
+        <div className="mb-4 flex items-center justify-between rounded-2xl border border-blue-200 bg-blue-50/80 p-3.5 shadow-xs dark:border-blue-900/50 dark:bg-blue-950/30">
+          <div className="flex items-center gap-3">
+            <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${pushSubscribed ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white'}`}>
+              {pushSubscribed ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
+            </div>
+            <div>
+              <h3 className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                {pushSubscribed ? 'Alertas Push Activas' : 'Activar Notificaciones de Alerta'}
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                {pushSubscribed
+                  ? 'Recibirás alertas sonoras al asignarte denuncias'
+                  : 'Recibe avisos aun con la app o pestaña cerrada'}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSubscribePush}
+            disabled={pushLoading || pushSubscribed}
+            className={`rounded-xl px-3 py-2 text-xs font-bold transition-all ${
+              pushSubscribed
+                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 cursor-default'
+                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs active:scale-95 disabled:opacity-50'
+            }`}
+          >
+            {pushLoading ? 'Activando...' : pushSubscribed ? '✓ Activo' : 'Activar Alertas'}
+          </button>
+        </div>
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <RefreshCw className="mb-3 h-8 w-8 animate-spin text-emerald-600" />

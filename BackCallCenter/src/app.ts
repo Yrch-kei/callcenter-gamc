@@ -21,6 +21,7 @@ import fs from 'fs';
 import reportRoutes from './routes/report.routes';
 import statsRoutes from './routes/stats.routes';
 import exportRoutes from './routes/export.routes';
+import pushRoutes from './routes/push.routes';
 
 const app = express();
 
@@ -96,6 +97,7 @@ app.use(
 app.use('/api/reports', reportRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/push', pushRoutes);
 
 // Manejo de errores
 app.use(errorMiddleware);

@@ -208,6 +208,12 @@ const complaintService = {
   getTechnicians: (unitId) =>
     api.get('/users/technicians', { params: { unitId } }).then((r) => r.data),
 
+  /** GET /api/push/public-key */
+  getPushPublicKey: () => api.get('/push/public-key').then((r) => r.data),
+
+  /** POST /api/push/subscribe */
+  subscribePush: (subscription) => api.post('/push/subscribe', { subscription }).then((r) => r.data),
+
   // Helpers
   PRIORITY_TO_RISK,
   STATUS_FRONT_TO_BACKEND,

@@ -13,9 +13,10 @@ export default defineConfig({
         enabled: true
       },
       workbox: {
-        navigateFallbackAllowlist: [/^\/[^._]*$/]
+        navigateFallbackAllowlist: [/^\/[^._]*$/],
+        importScripts: ['/sw-custom.js']
       },
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg', 'favicon.svg'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg', 'favicon.svg', 'sw-custom.js'],
       manifest: {
         id: '/tecnico',
         start_url: '/tecnico',
